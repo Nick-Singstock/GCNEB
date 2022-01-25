@@ -4,9 +4,9 @@ Grand-Canonical Nudged Elastic Band
 Approach to run grand-canonical DFT calculations of transition states to obtain activation barriers as a function of applied bias at a solvated surface interface. Useful for obtaining reaction kinetics of electrocatalysts. 
 
 Dependencies:
-JDFTx: https://jdftx.org/CompilingBasic.html 
-ASE: https://wiki.fysik.dtu.dk/ase/install.html
-Python 3
+1. JDFTx: https://jdftx.org/CompilingBasic.html 
+2. ASE: https://wiki.fysik.dtu.dk/ase/install.html
+3. Python 3
 
 Setup: 
 1. Clone Github Repo to computer
