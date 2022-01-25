@@ -1,0 +1,7 @@
+All needed files are included.
+
+Run: 'sub_JDFTx.py -o Au_test' 
+in this example folder to submit the 2-step Au bulk convergence.
+
+The job will run until the energy convergence criteria is met,
+job details will be output to 'opt.log' and 'out'.

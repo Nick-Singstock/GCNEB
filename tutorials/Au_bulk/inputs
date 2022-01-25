@@ -1,0 +1,34 @@
+elec-ex-corr gga
+van-der-waals D3
+elec-cutoff 20 100
+elec-n-bands 32
+kpoint-folding 6 6 6
+electronic-minimize nIterations 100 energyDiffThreshold  1e-07
+elec-smearing Fermi 0.001 
+elec-initial-magnetization 0 no  
+spintype z-spin
+core-overlap-check none
+converge-empty-states yes
+latt-move-scale 1 1 1 
+lattice-minimize nIterations 100
+symmetries none 
+dump End Dtot BoundCharge 
+dump End State
+dump End Forces
+dump End Ecomponents
+dump End VfluidTot
+dump End ElecDensity
+dump End KEdensity
+dump End EigStats
+dump End BandEigs
+dump End DOS
+logfile ase_out
+pseudos GBRV_v1.5
+restart False
+max_steps 100 
+fmax 0.00
+econv 1e-3
+safe-mode True
+optimizer FIRE
+opt-alpha 120
+lattice-type bulk

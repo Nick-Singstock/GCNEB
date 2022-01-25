@@ -1,0 +1,12 @@
+All needed files are included.
+
+Run: 'sub_JDFTx.py -o H2O_test -t 1' 
+Alternatively, run: 'sub_JDFTx.py -h' to see additional options
+in this example folder to submit the single-step solvated H2O-in-a-box for 1 hour.
+
+The job will run until the energy (econv) or force (fmax) convergence criteria is met,
+job details will be output to 'opt.log' and 'out'.
+
+See inputs file for job parameters.
+Calculation parameters are from JDFTx: https://jdftx.org/CommandIndex.html
+Additonal parameters for ASE controller can be optained by running 'sub_JDFTx.py -i True'

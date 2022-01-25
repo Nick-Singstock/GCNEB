@@ -1,0 +1,7 @@
+step 1
+kpoint-folding 1 1 1
+elec-cutoff 16
+
+step 2
+kpoint-folding default
+elec-cutoff default
