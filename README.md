@@ -11,8 +11,8 @@ Dependencies:
 
 Setup: 
 1. Clone Github Repo to computer
-2. Setup & source .jdftx.bashrc in home directory based on template
-3. Add GBRV_v1.5/ folder to jdftx/pseudopotentials/ (provided)
+2. Setup & source .jdftx.bashrc in home directory based on template in tutorials folder
+3. Add GBRV_v1.5/ folder to jdftx/pseudopotentials/ (provided in pseudos)
 4. Follow tutorials to run molecule calculations
 5. Follow tutorial to run bulk Au calculation
 6. Follow tutorial to run solvated / biased Au(111) surface calculation
@@ -21,5 +21,4 @@ Setup:
 9. Study electrochemical systems with state-of-the-art methods and power level > 9000
 
 If you use these scripts in your own work, please cite: 
-
 Singstock, N.; Musgrave, C. Electrocatalytic Nitrogen Reduction Mechanism on the Bio-Inspired Chevrel Phase Fe2Mo6S8. In Review. 2022.
