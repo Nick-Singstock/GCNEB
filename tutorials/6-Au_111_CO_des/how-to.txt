@@ -1,0 +1,8 @@
+Example calculation for Au(111) at 0.0V with *CO desorbed (for NEB initial state)
+
+All needed files are included.
+
+Run: 'sub_JDFTx.py -o Au_111_CO' 
+in this example folder to submit the 3-step Au(111) + *CO desorbed convergence.
+
+Same parameters as tutorial folder 5

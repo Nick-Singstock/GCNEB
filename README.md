@@ -5,16 +5,20 @@ Approach to run grand-canonical DFT calculations of transition states to obtain 
 
 Dependencies:
 1. JDFTx: https://jdftx.org/CompilingBasic.html 
-2. ASE: https://wiki.fysik.dtu.dk/ase/install.html
-3. Python 3
+2. Python 3
+3. ASE: https://wiki.fysik.dtu.dk/ase/install.html
+
 
 Setup: 
 1. Clone Github Repo to computer
 2. Setup & source .jdftx.bashrc in home directory based on template
-3. Follow tutorial to run bulk calculations
-4. Follow tutorial to run solvated / biased surface calculations
-5. Follow GCNEB tutorial starting from converged initial and final state calculations
-6. Study electrochemical systems with state-of-the-art methods and power level > 9000
+3. Add GBRV_v1.5/ folder to jdftx/pseudopotentials/ (provided)
+4. Follow tutorials to run molecule calculations
+5. Follow tutorial to run bulk Au calculation
+6. Follow tutorial to run solvated / biased Au(111) surface calculation
+7. Follow tutorials to run solvated / biased Au(111) + CO adsorbate calculations
+8. Follow GCNEB tutorial starting from converged initial and final state calculations (step 7)
+9. Study electrochemical systems with state-of-the-art methods and power level > 9000
 
 If you use these scripts in your own work, please cite: 
 

@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 
-# Atomistic Simulation Environment (ASE) calculator interface for JDFTx
-# See http://jdftx.org for JDFTx and https://wiki.fysik.dtu.dk/ase/ for ASE
-# Authors: Deniz Gunceler, Ravishankar Sundararaman
+'''
+Atomistic Simulation Environment (ASE) calculator interface for JDFTx
+See http://jdftx.org for JDFTx and https://wiki.fysik.dtu.dk/ase/ for ASE
+Authors: Deniz Gunceler, Ravishankar Sundararaman
+
+Edited By: Nick Singstock
+For use with https://github.com/Nick-Singstock/GCNEB
+'''
+
 
 from __future__ import print_function #For Python2 compatibility
 

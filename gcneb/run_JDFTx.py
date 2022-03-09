@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Musgrave Group
+Authors: Nick Singstock, Zack Bare
 
-@author: zaba1157, nisi6161
+Script for running ASE-managed JDFTx jobs on supercomputers
 """
 
 from JDFTx import JDFTx

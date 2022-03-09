@@ -1,0 +1,58 @@
+### Functional ###
+elec-ex-corr gga
+van-der-waals D3
+
+### Electronic Parameters ###
+elec-cutoff 20 100
+elec-n-bands 14
+kpoint-folding 2 2 2
+electronic-minimize nIterations 100 energyDiffThreshold  1e-07
+elec-smearing Fermi 0.001 
+elec-initial-magnetization 0 no  
+spintype z-spin
+core-overlap-check none
+converge-empty-states yes
+
+### Lattice / Unit Cell ###
+latt-move-scale 0 0 0 
+lattice-minimize nIterations 0
+symmetries none 
+#coulomb-interaction Periodic
+#coords-type Lattice
+
+### Solvation & Bias ###
+fluid LinearPCM  
+pcm-variant CANDLE 
+fluid-solvent H2O
+fluid-cation Na+ 0.5
+fluid-anion F- 0.5
+#target-mu *
+
+### Output Files ###
+dump End Dtot BoundCharge 
+dump End State
+dump End Forces
+dump End Ecomponents
+dump End VfluidTot
+dump End ElecDensity
+dump End KEdensity
+dump End EigStats
+dump End BandEigs
+
+### Density of States ###
+dump End DOS
+#pdos Total
+
+### ASE Parameters ###
+logfile ase_out
+pseudos GBRV_v1.5
+restart False 
+max_steps 100 
+fmax 0.01 
+econv 1e-3
+safe-mode True
+optimizer FIRE
+opt-alpha 120
+lattice-type periodic
+
+target-mu -0.1713

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on 3/23/2021
+Helper script to manage recursive jobs 
 
-@author: nisi6161
+Author: Nick Singstock
 """
 
 import time

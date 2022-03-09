@@ -1,0 +1,11 @@
+Example NEB calculation for 5-image *CO adsorption onto Au(111) at 0.0V
+
+Files will be obtained from previous tutorial calculations.
+
+Steps to setup calculation:
+  1. Converge tutorial folders 5 and 6
+  2. Copy 'CONTCAR' files from calculation folders 5 and 6 to subfolders 06 and 00, respectively.
+  3. In current folder, run 'gcneb_setup.py -n 5' to setup 5 image folders
+  4. Run: 'sub_JDFTx.py -o GCNEB -t 24' 
+
+

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Nov  6 20:43:05 2020
+Script to submit JDFTx calculations to supercomputers. 
 
-@author: zaba1157
+Authors: Nick Singstock, Zach Bare
 """
 import argparse
 import os
@@ -46,13 +46,29 @@ def write(nodes,cores,time,out,alloc,qos,script,short_recursive,procs,gpu,testin
     
     if comp == 'Eagle' and gpu != 'True':
         writelines+='#SBATCH -N 1 -n 2 -c 18 --hint=nomultithread'+'\n'
+        
+    elif comp == 'Perlmutter': 
+        writelines+='#SBATCH -q regular\n'
+        writelines+='#SBATCH -N '+str(nodes)+'\n'
+        writelines+='#SBATCH -n '+str(2*nodes)+'\n'
+        writelines+='#SBATCH -c '+str(16*nodes)+'\n'                   #TODO: pick better numbers
+        writelines+='#SBATCH --ntasks-per-node=2\n'
+        if gpu == 'True':
+            writelines+='#SBATCH -C gpu\n'
+            writelines+='#SBATCH --gpus-per-task=1\n'
+        
     else:
         writelines+='#SBATCH --tasks '+str(np)+'\n'
         writelines+='#SBATCH --nodes '+str(nodes)+'\n'
         writelines+='#SBATCH --ntasks-per-node '+str(cores)+'\n'
-
+    
     if alloc=='environ':
-        writelines+='#SBATCH --account='+os.environ['JDFTx_allocation']+'\n'
+        if comp == 'Perlmutter' and gpu == 'True':
+            writelines+='#SBATCH -A '+os.environ['JDFTx_allocation']+'_g\n'
+        elif comp == 'Perlmutter' and gpu != 'True':
+            writelines+='#SBATCH -A '+os.environ['JDFTx_allocation']+'\n'
+        else:
+            writelines+='#SBATCH --account='+os.environ['JDFTx_allocation']+'\n'
     else:
         writelines+='#SBATCH --account='+alloc+'\n'
     if qos=='high' and comp == 'Eagle':
@@ -72,17 +88,23 @@ def write(nodes,cores,time,out,alloc,qos,script,short_recursive,procs,gpu,testin
 #    if comp == 'Eagle' and gpu != 'True':
 #        writelines+='#SBATCH --hint=nomultithread'
     
-    if comp != 'Eagle':
-        writelines+='\nexport JDFTx_NUM_PROCS='+str(procs)+'\n' # previously np
+    if comp == 'Perlmutter':
+        writelines+='\nexport JDFTx_NUM_PROCS=1\n' 
     if comp == 'Summit':
         writelines+='SLURM_EXPORT_ENV=ALL\n'
+        writelines+='\nexport JDFTx_NUM_PROCS='+str(procs)+'\n' # previously np
 
     #writelines+='module load comp-intel/2020.1.217 intel-mpi/2020.1.217 cuda/10.2.89 vasp/6.1.1 mkl/2020.1.217 gsl/2.5/gcc openmpi/4.0.4/gcc-8.4.0 gcc/7.4.0'+'\n\n'
     if comp == 'Eagle':
         writelines+='\n'+'module use -a /nopt/nrel/apps/modules/test/modulefiles'+'\n'
 #        writelines+='module load gcc/8.4.0 openmpi/4.1.1/gcc+cuda hdf5/1.10.7/gcc-ompi gsl/2.5/gcc cmake mkl'
     
-    if modules != '':
+    if comp == 'Perlmutter':
+        writelines+='\n'+'export SLURM_CPU_BIND="cores"'+'\n'
+        writelines+='export JDFTX_MEMPOOL_SIZE=36000'+'\n'        #(prev. 8192)    256 GB / ntasks (4)
+        writelines+='export MPICH_GPU_SUPPORT_ENABLED=1'+'\n\n'
+    
+    if modules != '' and comp not in ['Perlmutter']:
         writelines+='\nmodule load '+modules+'\n\n'
 
     if short_recursive == 'True': # removed time constraint
@@ -102,7 +124,9 @@ def write(nodes,cores,time,out,alloc,qos,script,short_recursive,procs,gpu,testin
         else:
             writelines+='python '+script+' > '+out+'\n'
     writelines+='exit 0'+'\n'
-
+    
+#    print(writelines)
+    
     with open('submit.sh','w') as f:
         f.write(writelines)
 
@@ -177,16 +201,21 @@ if __name__ == '__main__':
     script = opj(jdftx_python_dir,'run_JDFTx.py')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--nodes', help='Number of nodes',
-                        type=int, default=1)
-    parser.add_argument('-c', '--cores', help='Number of cores',
-                        type=int, default=os.environ['CORES_PER_NODE'])
+    
     parser.add_argument('-t', '--time', help='Time limit',
                         type=int, default=int(os.environ['JDFTx_Default_Time']))
     parser.add_argument('-o', '--outfile', help='Outfile name',
                         type=str, required=True)
+    parser.add_argument('-g', '--gpu', help='If True, runs GPU install of JDFTx',
+                        type=str, default='False')
+    parser.add_argument('-i', '--inputs', help='If True, print all non-JDFTx paramters for inputs.',
+                        type=str, default='False')
     parser.add_argument('-a', '--allocation', help='Allocation',
                         type=str,default='environ')
+    parser.add_argument('-n', '--nodes', help='Number of nodes',
+                        type=int, default=1)
+    parser.add_argument('-c', '--cores', help='Number of cores',
+                        type=int, default=os.environ['CORES_PER_NODE'])
     parser.add_argument('-q', '--qos', help='Priority / QOS (e.g. high)',
                         type=str,default='standard')
     parser.add_argument('-r', '--recursive', help='If True, recursively runs job until complete',
@@ -195,15 +224,36 @@ if __name__ == '__main__':
                         type=str,default='RM-shared')
     parser.add_argument('-m', '--processes', help='Number of JDFT processes, should be <= nstates (see irr. kpoints). '+
                         'Total cores / processes = threads per process (int for high eff.)', type=int, default=2)
-    parser.add_argument('-g', '--gpu', help='If True, runs GPU install of JDFTx',
-                        type=str, default='False')
+    
     parser.add_argument('-test', '--test_queue', help='If True, runs job on test queue',
                         type=str, default='False')
 
     args = parser.parse_args()
     #print(args.gpu, type(args.gpu))
     
-    if args.recursive == 'True':
+    end = False
+    if args.inputs == 'True':
+        all_inputs = ('Allowed Parameters for "inputs" file: \n'
+                      +'\tJDFTx parameters available at: https://jdftx.org/CommandIndex.html \n'
+                      +'\tlogfile: name of logging file \n'
+                      +'\tpseudos: name of folder within jdftx-build/pseudopotentials/ to get pseudos \n'
+                      +'\max_steps: maximum number of ionic steps \n'
+                      +'\fmax: force convergence criteria \n'
+                      +'\econv: energy convergence criteria (in eV) \n'
+                      +'\restart: whether to use POSCAR (False, default) or CONTCAR (True) \n'
+                      +'\safe-mode: stops job if forces are > 500 (True) \n'
+                      +'\optimizer: ASE optimizer to use for ionic conv. (https://wiki.fysik.dtu.dk/ase/ase/optimize.html) \n'
+                      +'\opt-alpha: ASE optimizer step size \n'
+                      +'\nimages: Runs NEB job with given number of images \n'
+                      +'\climbing: Runs climbing image NEB \n'
+                      +'\pdos: JDFTx tag with simplified options (e.g.: pdos C s p px py pz) \n'
+                      +'\lattice-type: specifies periodic boundaries: bulk/periodic (xyz), slab/surf (xy), mol (none) \n'
+                      +'\Step: Used in convergence file to indicate steps of a multi-step job \n'
+                      )
+        print(all_inputs)
+        end = True
+    
+    if args.recursive == 'True' and not end:
         recursive_restart()
 
     # new safety check line
@@ -212,13 +262,14 @@ if __name__ == '__main__':
         outfile = 'python_out'
 
     # Multiple write options depending on computer
-    if comp == 'Eagle' or comp == 'Summit':
-        write(args.nodes,args.cores,args.time,args.outfile,args.allocation,args.qos,		
-              script, args.recursive, args.processes, args.gpu, args.test_queue)
-    elif comp == 'Bridges2':
-        write_bridges(args.nodes,args.cores,args.time,outfile,args.partition,args.qos,
-                      script, args.recursive, args.processes)
-    
-    #os.system('sbatch submit.sh')
-    subprocess.call('sbatch submit.sh', shell=True)
+    if not end:
+        if comp == 'Eagle' or comp == 'Summit' or comp == 'Perlmutter':
+            write(args.nodes,args.cores,args.time,args.outfile,args.allocation,args.qos,		
+                  script, args.recursive, args.processes, args.gpu, args.test_queue)
+        elif comp == 'Bridges2':
+            write_bridges(args.nodes,args.cores,args.time,outfile,args.partition,args.qos,
+                          script, args.recursive, args.processes)
+        
+        #os.system('sbatch submit.sh')
+        subprocess.call('sbatch submit.sh', shell=True)
     

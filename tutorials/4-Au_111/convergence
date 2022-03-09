@@ -1,0 +1,15 @@
+Step 1 - Rough Convergence
+kpoint-folding 1 1 1
+elec-cutoff 16
+fmax 0.5
+
+Step 2 - Accurate Convergence
+kpoint-folding default
+elec-cutoff default
+fmax 0.01
+
+Step 3 - Single Point
+kpoint-folding default
+elec-cutoff default
+max_steps 0
+pdos Au s d dxy dxz dyz dz2 dx2-y2

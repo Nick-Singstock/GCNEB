@@ -1,0 +1,17 @@
+Example adsorbate calculation for Au(111) at 0.0V with *CO adsorbed
+
+All needed files are included.
+
+Run: 'sub_JDFTx.py -o Au_111_CO' 
+in this example folder to submit the 3-step Au(111) + *CO adsorbate convergence.
+
+The job will run until the energy or force convergence criteria is met,
+job details will be output to 'opt.log' and 'out'.
+
+The final energy will be the last line printed in opt.log (in eV).
+
+The adsorption energy of *CO on Au(111) can be calculated by subtracting the 
+energy of the 0.0V Au(111) surface and the 0.0V CO molecule from the final energy
+of this calculation. 
+
+Projected density of states will be output for Au, C and O atoms after final single point calc.

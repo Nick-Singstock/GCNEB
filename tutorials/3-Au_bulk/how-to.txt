@@ -1,6 +1,8 @@
+Example bulk calculation for Au, with 4 atoms
+
 All needed files are included.
 
-Run: 'sub_JDFTx.py -o Au_test' 
+Run: 'sub_JDFTx.py -o Au_bulk' 
 in this example folder to submit the 2-step Au bulk convergence.
 
 The job will run until the energy convergence criteria is met,

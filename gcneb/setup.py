@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: zaba1157
+Author: Zach Bare
+
+Script to make all jobs in folder executable (755)
 """
 
 import os
