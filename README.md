@@ -21,4 +21,5 @@ Setup:
 9. Study electrochemical systems with state-of-the-art methods and power level > 9000
 
 If you use these scripts in your own work, please cite: 
+
 Singstock, N.; Musgrave, C. Electrocatalytic Nitrogen Reduction Mechanism on the Bio-Inspired Chevrel Phase Fe2Mo6S8. In Review. 2022.
