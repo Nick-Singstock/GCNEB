@@ -11,7 +11,7 @@ Dependencies:
 
 Setup: 
 1. Clone Github Repo to computer
-2. Setup & source .jdftx.bashrc in home directory based on template in tutorials folder
+2. Setup & source .jdftx.bashrc in home directory based on TEMPLATE.jdftx.bashrc
 3. Add GBRV_v1.5/ folder to jdftx/pseudopotentials/ (provided in pseudos)
 4. Follow tutorials to run molecule calculations
 5. Follow tutorial to run bulk Au calculation
