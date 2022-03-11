@@ -22,4 +22,4 @@ Setup:
 
 If you use these scripts in your own work, please cite: 
 
-Singstock, N.; Musgrave, C. Electrocatalytic Nitrogen Reduction Mechanism on the Bio-Inspired Chevrel Phase Fe2Mo6S8. In Review. 2022.
+Singstock, N.; Musgrave, C. How the Bio-Inspired Fe2Mo6S8 Chevrel Breaks Electrocatalytic Nitrogen Reduction Scaling Relations. In Review. 2022.
