@@ -22,4 +22,6 @@ Setup:
 
 If you use these scripts in your own work, please cite: 
 
-Singstock, N.; Musgrave, C. How the Bio-Inspired Fe2Mo6S8 Chevrel Breaks Electrocatalytic Nitrogen Reduction Scaling Relations. In Review. 2022.
+https://pubs.acs.org/doi/full/10.1021/jacs.2c03661
+
+Singstock, N.; Musgrave, C. How the Bio-Inspired Fe2Mo6S8 Chevrel Breaks Electrocatalytic Nitrogen Reduction Scaling Relations. JACS. 2022.
