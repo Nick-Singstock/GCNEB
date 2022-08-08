@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Authors: Nick Singstock, Zack Bare
+Musgrave Group. Functions to run JDFTx via python.
 
-Script for running ASE-managed JDFTx jobs on supercomputers
+@author: zaba1157, nisi6161
 """
 
 from JDFTx import JDFTx
@@ -147,15 +147,62 @@ def add_dos(cmds, script_cmds):
     new_cmds += [('density-of-states', dos_line)]
     return new_cmds
 
+def autodos_sp(cmds, atoms):
+    els = list(set(atoms.get_chemical_symbols()))
+    doskeys = {'s': ['s'], 'p': ['p','px','py','pz'], 'd': ['d','dxy','dxz','dyz','dz2','dx2-y2']}
+    alldos = {'s': ['H',  'Li','Be',   'B','C','N','O','F',
+                    'Na','Mg',  'Sc','Ti','V','Cr','Mn','Fe','Co','Ni','Cu','Zn',  'Al','Si','P','S','Cl',
+                    'K','Ca',   'Y','Zr','Nb','Mo','Tc','Ru','Rh','Pd','Ag','Cd',  'Ga','Ge','As','Se','Br',
+                    'Rb','Sr',  'Hf','Ta','W','Re','Os','Ir','Pt','Au','Hg'        'In','Sn','Sb','Te','I'],
+              'p': ['B','C','N','O','F',        'Al','Si','P','S','Cl',
+                    'Ga','Ge','As','Se','Br',   'In','Sn','Sb','Te','I', 'Tl','Pb'],
+              'd': ['Sc','Ti','V','Cr','Mn','Fe','Co','Ni','Cu','Zn',
+                    'Y','Zr','Nb','Mo','Tc','Ru','Rh','Pd','Ag','Cd',
+                    'Hf','Ta','W','Re','Os','Ir','Pt','Au','Hg']}
+    new_dos = []
+    for el in els:
+        el_dos = [el]
+        for orb in ['s','p','d']:
+            orb_els = alldos[orb]
+            if el in orb_els:
+                el_dos += doskeys[orb]
+        if len(el_dos) < 2:
+            continue # no dos orbitals for this atom
+        dosstr = ' '.join(el_dos)
+        new_dos.append(dosstr)
+    new_dos.append('Total')
+    dos_cmds = {'pdos': new_dos}
+    newcmds = add_dos(cmds, dos_cmds)
+    return newcmds
+
+def clean_doscmds(cmds):
+    new_cmds = []
+    for cmd in cmds:
+        # remove repeat pdos cmds 
+        if cmd[0] == 'density-of-states':
+            dosline = cmd[1]
+            pdos = dosline.split(' \\\n')
+            new_pdos = []
+            for p in pdos:
+                if p not in new_pdos:
+                    new_pdos.append(p)
+            conv_logger('clean pdos: ' + str(new_pdos))
+            cmd = (cmd[0], ' \\\n'.join(new_pdos))
+        
+        if cmd not in new_cmds:
+            new_cmds.append(cmd)
+    conv_logger('clean cmds: '+str(new_cmds))
+    return new_cmds
+
 # main function for calculations
-def run_calc(command_file, jdftx_exe):
+def run_calc(command_file, jdftx_exe, autodoscmd):
 
     notinclude = ['ion-species','ionic-minimize',
                   #'latt-scale','latt-move-scale','coulomb-interaction','coords-type',
-                  'ion','climbing','pH','ph',
+                  'ion','climbing','pH','ph',  'autodos',
                   'logfile','pseudos','nimages','max_steps','max-steps','fmax','optimizer',
                   'restart','parallel','safe-mode','hessian', 'step', 'Step',
-                  'opt-alpha', 'md-steps', 'econv', 'pdos', 'pDOS', 'lattice-type']
+                  'opt-alpha', 'md-steps', 'econv', 'pdos', 'pDOS', 'lattice-type', 'np']
 
     # setup default functions needed for running calcs
     def open_inputs(inputs_file):
@@ -244,12 +291,27 @@ def run_calc(command_file, jdftx_exe):
 #    safe_mode = False if ('safe-mode' in script_cmds and script_cmds['safe-mode'] == 'False') else True
 #    use_hessian = True if ('hessian' in script_cmds and script_cmds['hessian'] == 'True') else False
     
-    
-    if comp == 'Eagle':
-        exe_cmd = 'mpirun --bind-to none '+jdftx_exe
-    else:
-        jdftx_num_procs = os.environ['JDFTx_NUM_PROCS']
-        exe_cmd = 'mpirun -np '+str(jdftx_num_procs)+' '+jdftx_exe
+    def get_exe_cmd(script_cmds, nprocs = False):
+        if comp == 'Eagle':
+            exe_cmd = 'mpirun --bind-to none '+jdftx_exe
+        elif comp in ['Cori',]:
+            exe_cmd = 'srun --cpu-bind=cores -c 8 '+jdftx_exe
+            conv_logger('Running on Cori with srun.')
+        elif comp in ['Perlmutter']:
+            exe_cmd = 'srun '+jdftx_exe
+            conv_logger('Running on Perl with srun.')
+        else:
+            if nprocs != False: # read np from n-kpts
+                jdftx_num_procs = nprocs
+            else:
+                jdftx_num_procs = os.environ['JDFTx_NUM_PROCS']
+            
+            if 'np' in script_cmds:
+                jdftx_num_procs = script_cmds['np']
+            
+            exe_cmd = 'mpirun -np '+str(jdftx_num_procs)+' '+jdftx_exe
+            conv_logger('exe_cmd: ' + exe_cmd)
+        return exe_cmd
 
         
     def read_atoms(restart):
@@ -276,11 +338,11 @@ def run_calc(command_file, jdftx_exe):
             BFGS, BFGSLineSearch, LBFGS, LBFGSLineSearch, GPMin, MDMin and FIRE.
         """
         use_hessian = True if ('hessian' in script_cmds and script_cmds['hessian'] == 'True') else False
-        opt_alpha = 70 if 'opt-alpha' not in script_cmds else int(script_cmds['opt-alpha'])
+        opt_alpha = 150 if 'opt-alpha' not in script_cmds else int(script_cmds['opt-alpha'])
         if 'optimizer' in script_cmds:
             opt = script_cmds['optimizer']
         else:
-            opt='BFGS'
+            opt='FIRE'
         
         opt_dict = {'BFGS':BFGS, 'BFGSLineSearch':BFGSLineSearch,
                     'LBFGS':LBFGS, 'LBFGSLineSearch':LBFGSLineSearch,
@@ -301,11 +363,20 @@ def run_calc(command_file, jdftx_exe):
             else:
                 dyn = opt_dict[opt](imag_atoms,logfile=logfile)
         return dyn
-        
+    
+    def get_nprocs(cmds):
+        for cmd in cmds:
+            if cmd[0] == 'kpoint-folding':
+                kpts = [int(kpt) for kpt in cmd[1].split()]
+                return np.product(kpts) * 2
+        return False # no kpts tag found
+    
     def set_calc(cmds, script_cmds, outfile = os.getcwd()):
         psuedos = script_cmds['pseudos']
+        nprocs = get_nprocs(cmds)
+        conv_logger('nprocs: '+str(nprocs))
         return JDFTx(
-            executable = exe_cmd,
+            executable = get_exe_cmd(script_cmds, nprocs),
             pseudoSet=psuedos,
             commands=cmds,
             outfile = outfile)
@@ -471,9 +542,27 @@ def run_calc(command_file, jdftx_exe):
                 restart = True if ('restart' in script_cmds and script_cmds['restart'] == 'True') else False
             else:
                 restart = True
-                
-            # set atoms object and calculator
+            
+            max_steps = int(script_cmds['max_steps']) if 'max_steps' in script_cmds else (
+                        int(script_cmds['max-steps']) if 'max-steps' in script_cmds else 100) # 100 default
+            
+            # single point calculation consistent notation
+            if max_steps == 0 and comp in ['Summit','Alpine','Perlmutter']:
+                max_steps = 1
+            elif max_steps == 1 and comp in ['Eagle']:
+                max_steps = 0
+            
+            # set atoms object
             atoms = read_atoms(restart)
+            
+            autodos_tag = True if ('autodos' in script_cmds and script_cmds['autodos'] == 'True') else False
+            # auto add all pdos for single points and clean cmds
+            if (max_steps in [0, 1] and autodoscmd) or autodos_tag:
+                cmds = autodos_sp(cmds, atoms)
+            # clean repeat dos cmds
+            cmds = clean_doscmds(cmds)
+            
+            # set calculator
             calculator = set_calc(cmds, script_cmds)
             atoms.set_calculator(calculator)
     
@@ -526,14 +615,17 @@ def run_calc(command_file, jdftx_exe):
             if safe_mode: 
                 dyn.attach(force_checker,interval=1)
             
-            max_steps = int(script_cmds['max_steps']) if 'max_steps' in script_cmds else (
-                        int(script_cmds['max-steps']) if 'max-steps' in script_cmds else 100) # 100 default
-            
-            # single point calculation consistent notation
-            if max_steps == 0 and comp in ['Summit']:
-                max_steps = 1
-            elif max_steps == 1 and comp in ['Eagle']:
-                max_steps = 0
+#            max_steps = int(script_cmds['max_steps']) if 'max_steps' in script_cmds else (
+#                        int(script_cmds['max-steps']) if 'max-steps' in script_cmds else 100) # 100 default
+#            
+#            # single point calculation consistent notation
+#            if max_steps == 0 and comp in ['Summit']:
+#                max_steps = 1
+#            elif max_steps == 1 and comp in ['Eagle']:
+#                max_steps = 0
+#            
+#            if max_steps in [0, 1]:
+#                autodos()
                 
 #            fmax = float(script_cmds['fmax'])
             fmax = float(script_cmds['fmax']) if 'fmax' in script_cmds else 0.01 # default 0.01
@@ -583,6 +675,9 @@ def run_calc(command_file, jdftx_exe):
                 cmds, script_cmds = update_cmds(conv, ii+1, cmds, script_cmds)
                 conv_logger('updated cmds and script cmds with convergence file')
                 conv_logger('Running Convergence Step: '+str(ii+1), 'neb.log')
+            
+            # clean repeat dos cmds
+            cmds = clean_doscmds(cmds)
             
             if ii == 0:
                 restart = True if ('restart' in script_cmds and script_cmds['restart'] == 'True') else False
@@ -662,6 +757,10 @@ if __name__ == '__main__':
                         type=str, default='./')
     parser.add_argument('-g', '--gpu', help='If True, runs GPU install of JDFTx.',
                         type=str, default='False')
+    parser.add_argument('-ad', '--autodos', help='If True (Default)), adds dos tags to SP calcs.',
+                        type=str, default='True')
+#    parser.add_argument('-p', '--parallel', help='If True, runs parallel sub-job with JDFTx.',
+#                        type=str, default='False')
 
 
     args = parser.parse_args()
@@ -672,9 +771,13 @@ if __name__ == '__main__':
             jdftx_exe = os.environ['JDFTx_GPU']
         except:
             print('Environment variable "JDFTx_GPU" not found, running standard JDFTx.')
+    
+#    if args.parallel == 'True':
+#        jdftx_exe = '-N 1 -n 4 '+jdftx_exe
 
     command_file = 'inputs'
     
     conv_logger('\n\n----- Entering run function -----')
-    run_calc(command_file, jdftx_exe)
+    autodoscmd = True if args.autodos == 'True' else False
+    run_calc(command_file, jdftx_exe, autodoscmd)
 

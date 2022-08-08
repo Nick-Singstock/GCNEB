@@ -812,7 +812,7 @@ class helper():
                 'O2': {'refs': ['O2'], 'coeffs': [1]},
                 
                 'CO2': {'refs': ['CO2'], 'coeffs': [1]},
-                'CO': {'refs': ['CO2','O'], 'coeffs': [1,-1]},
+                'CO': {'refs': ['CO'], 'coeffs': [1]},
                 'C': {'refs': ['CO2','O'], 'coeffs': [1,-2]},
                 'CHO': {'refs': ['CO','H'], 'coeffs': [1,1]},
                 'COH': {'refs': ['CHO'], 'coeffs': [1]},
@@ -840,7 +840,7 @@ class helper():
                 'NH2NH2': {'refs': ['N2','H'], 'coeffs': [1,4]},
                 'NH': {'refs': ['N2','H'], 'coeffs': [0.5,1]},
                 'NH2': {'refs': ['N2','H'], 'coeffs': [0.5,2]},
-                'NH3': {'refs': ['N2','H'], 'coeffs': [0.5,3]},
+                'NH3': {'refs': ['NH3'], 'coeffs': [1]},
                 
                 'S2': {'refs': ['S8'], 'coeffs': [0.25]},
                 'S4': {'refs': ['S8'], 'coeffs': [0.5]},
@@ -1016,6 +1016,17 @@ class helper():
 #        assert all([ k in self.el_masses.keys() for k in els_list ]), 'ERROR: unknown element detected: '+formula
         return {els_list[i]: el_frac[i] for i,_ in enumerate(els_list)}
         
-
+    def log_output(self,*args):
+        line = ''
+        if ope('./output_log'):
+            with open('output_log','a') as f:
+                for message in args:
+                    line += f'{message} '
+                f.write(f'\n {line} \n')
+        else:
+            with open('output_log','a') as f:
+                for message in args:
+                    line += f'{message} '
+                f.write(f'\n {line} \n')
     
     

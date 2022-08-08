@@ -64,5 +64,5 @@ for i, image in enumerate(images):
     image.write(os.path.join(folder,'POSCAR'),format="vasp", direct=True)
     insert_el(os.path.join(folder,'POSCAR'))
    
-print('\nGCNEB directory setup. Calculation can be run with sub_JDFTx.py and "nimages'+
+print('\nGCNEB directory setup. Calculation can be run with sub_JDFTx.py and "nimages '+
       str(args.nimages) + '" in inputs file \n')

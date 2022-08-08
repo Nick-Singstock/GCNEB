@@ -3,7 +3,7 @@
 """
 Script to submit JDFTx calculations to supercomputers. 
 
-Authors: Nick Singstock, Zach Bare
+@author: zaba1157, nisi6161
 """
 import argparse
 import os
@@ -21,7 +21,16 @@ try:
 except:
     comp='Eagle'
 
-def write(nodes,cores,time,out,alloc,qos,script,short_recursive,procs,gpu,testing):
+def write(nodes,cores,time,out,alloc,qos,script,short_recursive,procs,gpu,testing, get_header = False):
+    try:
+        modules=' '.join(os.environ['JDFTx_mods'].split('_'))
+    except:
+        modules='' 
+    try:
+        comp=os.environ['JDFTx_Computer']
+    except:
+        assert False, 'ERROR: No JDFTx_Computer set!'
+    
 #    if short_recursive == 'True':
 #        if time != 4: 
 #            print('Time limit set to 04:00:00 from short_recursive')
@@ -35,37 +44,58 @@ def write(nodes,cores,time,out,alloc,qos,script,short_recursive,procs,gpu,testin
     writelines = '#!/bin/bash'+'\n'
     writelines+='#SBATCH -J '+out+'\n'
     if testing:
-        if comp == 'Summit':
+        if comp in ['Summit','Cori','Alpine']:
             writelines+='#SBATCH --time=0:30:00'+'\n'
         elif comp == 'Eagle':
             writelines+='#SBATCH --time=1:00:00'+'\n'
+        elif comp in ['Perlmutter']:
+            writelines+='#SBATCH --time=0:30:00'+'\n'
     else:
         writelines+='#SBATCH --time='+str(time)+':00:00'+'\n'
     writelines+='#SBATCH -o '+out+'-%j.out'+'\n'
     writelines+='#SBATCH -e '+out+'-%j.err'+'\n'
     
     if comp == 'Eagle' and gpu != 'True':
-        writelines+='#SBATCH -N 1 -n 2 -c 18 --hint=nomultithread'+'\n'
+        #writelines+='#SBATCH -N 1 -n 2 -c 18 --hint=nomultithread'+'\n'
+        writelines+='#SBATCH -N '+str(nodes)+' -n '+str(2*nodes)+' -c '+str(18)#*nodes)
+        writelines+=' --hint=nomultithread'+'\n'
         
     elif comp == 'Perlmutter': 
-        writelines+='#SBATCH -q regular\n'
+        if testing:
+            writelines+='#SBATCH -q debug\n'
+        else:
+            writelines+='#SBATCH -q regular\n'
         writelines+='#SBATCH -N '+str(nodes)+'\n'
-        writelines+='#SBATCH -n '+str(2*nodes)+'\n'
-        writelines+='#SBATCH -c '+str(16*nodes)+'\n'                   #TODO: pick better numbers
-        writelines+='#SBATCH --ntasks-per-node=2\n'
+#        writelines+='#SBATCH -n '+str(2*nodes)+'\n'
+        writelines+='#SBATCH -c '+str(32)+'\n'  #TODO: pick better numbers, prev 16*nodes
+        writelines+='#SBATCH --ntasks-per-node=4\n'
         if gpu == 'True':
             writelines+='#SBATCH -C gpu\n'
             writelines+='#SBATCH --gpus-per-task=1\n'
+    
+    elif comp in ['Cori',]:
+        if testing:
+            writelines+='#SBATCH -q debug\n'
+        else:
+            writelines+='#SBATCH -q regular\n'
+        writelines+='#SBATCH -N '+str(nodes)+'\n'
+        writelines+='#SBATCH -n '+str(nodes*8)+'\n'
+        writelines+='#SBATCH -c '+str(nodes*8)+'\n'
+        writelines+='#SBATCH -C haswell\n'
         
     else:
         writelines+='#SBATCH --tasks '+str(np)+'\n'
         writelines+='#SBATCH --nodes '+str(nodes)+'\n'
         writelines+='#SBATCH --ntasks-per-node '+str(cores)+'\n'
+        
+        if comp == 'Eagle' and gpu == 'True':
+            writelines+='#SBATCH --partition=gpu' + '\n'
+
     
     if alloc=='environ':
         if comp == 'Perlmutter' and gpu == 'True':
             writelines+='#SBATCH -A '+os.environ['JDFTx_allocation']+'_g\n'
-        elif comp == 'Perlmutter' and gpu != 'True':
+        elif comp in ['Perlmutter','Cori'] and gpu != 'True':
             writelines+='#SBATCH -A '+os.environ['JDFTx_allocation']+'\n'
         else:
             writelines+='#SBATCH --account='+os.environ['JDFTx_allocation']+'\n'
@@ -85,11 +115,20 @@ def write(nodes,cores,time,out,alloc,qos,script,short_recursive,procs,gpu,testin
         else:
             writelines+='#SBATCH --partition shas\n'    
     
+    if comp == 'Alpine':
+        writelines+='#SBATCH --partition amilan-ucb\n'
+        writelines+='#SBATCH --qos=normal\n'
+        writelines+='\nexport JDFTx_NUM_PROCS='+str(procs)+'\n'
+        writelines+='export I_MPI_FABRICS=shm\n'
+    
 #    if comp == 'Eagle' and gpu != 'True':
 #        writelines+='#SBATCH --hint=nomultithread'
     
-    if comp == 'Perlmutter':
+    if comp in ['Perlmutter']:
         writelines+='\nexport JDFTx_NUM_PROCS=1\n' 
+    if comp in ['Cori']:
+        writelines+='\n'
+#        writelines+='\nexport JDFTx_NUM_PROCS='+str(procs)+'\n' # previously np
     if comp == 'Summit':
         writelines+='SLURM_EXPORT_ENV=ALL\n'
         writelines+='\nexport JDFTx_NUM_PROCS='+str(procs)+'\n' # previously np
@@ -104,8 +143,11 @@ def write(nodes,cores,time,out,alloc,qos,script,short_recursive,procs,gpu,testin
         writelines+='export JDFTX_MEMPOOL_SIZE=36000'+'\n'        #(prev. 8192)    256 GB / ntasks (4)
         writelines+='export MPICH_GPU_SUPPORT_ENABLED=1'+'\n\n'
     
-    if modules != '' and comp not in ['Perlmutter']:
+    if modules != '' and comp not in ['Perlmutter',]:
         writelines+='\nmodule load '+modules+'\n\n'
+
+    if get_header:
+        return writelines
 
     if short_recursive == 'True': # removed time constraint
         # short_recursive command runs timer script before and after JDFT to check if walltime is hit
@@ -205,7 +247,7 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--time', help='Time limit',
                         type=int, default=int(os.environ['JDFTx_Default_Time']))
     parser.add_argument('-o', '--outfile', help='Outfile name',
-                        type=str, required=True)
+                        type=str, default='jdftx', required=False)
     parser.add_argument('-g', '--gpu', help='If True, runs GPU install of JDFTx',
                         type=str, default='False')
     parser.add_argument('-i', '--inputs', help='If True, print all non-JDFTx paramters for inputs.',
@@ -237,18 +279,20 @@ if __name__ == '__main__':
                       +'\tJDFTx parameters available at: https://jdftx.org/CommandIndex.html \n'
                       +'\tlogfile: name of logging file \n'
                       +'\tpseudos: name of folder within jdftx-build/pseudopotentials/ to get pseudos \n'
-                      +'\max_steps: maximum number of ionic steps \n'
-                      +'\fmax: force convergence criteria \n'
-                      +'\econv: energy convergence criteria (in eV) \n'
-                      +'\restart: whether to use POSCAR (False, default) or CONTCAR (True) \n'
-                      +'\safe-mode: stops job if forces are > 500 (True) \n'
-                      +'\optimizer: ASE optimizer to use for ionic conv. (https://wiki.fysik.dtu.dk/ase/ase/optimize.html) \n'
-                      +'\opt-alpha: ASE optimizer step size \n'
-                      +'\nimages: Runs NEB job with given number of images \n'
-                      +'\climbing: Runs climbing image NEB \n'
-                      +'\pdos: JDFTx tag with simplified options (e.g.: pdos C s p px py pz) \n'
-                      +'\lattice-type: specifies periodic boundaries: bulk/periodic (xyz), slab/surf (xy), mol (none) \n'
-                      +'\Step: Used in convergence file to indicate steps of a multi-step job \n'
+                      +'\tmax_steps: maximum number of ionic steps \n'
+                      +'\tfmax: force convergence criteria \n'
+                      +'\teconv: energy convergence criteria (in eV) \n'
+                      +'\trestart: whether to use POSCAR (False, default) or CONTCAR (True) \n'
+                      +'\tsafe-mode: stops job if forces are > 500 (True) \n'
+                      +'\toptimizer: ASE optimizer to use for ionic conv. (https://wiki.fysik.dtu.dk/ase/ase/optimize.html) \n'
+                      +'\topt-alpha: ASE optimizer step size \n'
+                      +'\tnimages: Runs NEB job with given number of images \n'
+                      +'\tclimbing: Runs climbing image NEB \n'
+                      +'\tpdos: JDFTx tag with simplified options (e.g.: pdos C s p px py pz) \n'
+                      +'\tlattice-type: specifies periodic boundaries: bulk/periodic (xyz), slab/surf (xy), mol (none) \n'
+                      +'\tStep: Used in convergence file to indicate steps of a multi-step job \n'
+                      +'\tautodos: If True, run all pdos tags for the system \n'
+                      +'\tnp: If set, use mpirun -np X for the calculation \n'
                       )
         print(all_inputs)
         end = True
@@ -263,13 +307,14 @@ if __name__ == '__main__':
 
     # Multiple write options depending on computer
     if not end:
-        if comp == 'Eagle' or comp == 'Summit' or comp == 'Perlmutter':
+        if comp in ['Eagle','Summit','Perlmutter','Cori','Alpine']:
             write(args.nodes,args.cores,args.time,args.outfile,args.allocation,args.qos,		
                   script, args.recursive, args.processes, args.gpu, args.test_queue)
         elif comp == 'Bridges2':
             write_bridges(args.nodes,args.cores,args.time,outfile,args.partition,args.qos,
                           script, args.recursive, args.processes)
-        
+        else:
+            assert False, 'Computer not recognized!'
         #os.system('sbatch submit.sh')
         subprocess.call('sbatch submit.sh', shell=True)
     
