@@ -124,7 +124,7 @@ def write(nodes,cores,time,out,alloc,qos,script,short_recursive,procs,gpu,testin
             writelines+='#SBATCH --partition shas\n'    
     
     if comp == 'Alpine':
-        writelines+='#SBATCH --partition amilan-ucb\n'
+        writelines+='#SBATCH --partition amilan\n'
         writelines+='#SBATCH --qos=normal\n'
         writelines+='\nexport JDFTx_NUM_PROCS='+str(procs)+'\n'
         writelines+='export I_MPI_FABRICS=shm\n'
@@ -329,5 +329,6 @@ if __name__ == '__main__':
         if args.interactive == 'True':
             subprocess.call('bash submit.sh', shell=True)
         else:
-            subprocess.call('sbatch submit.sh', shell=True)
+            subprocess.call('python '+script+' > '+outfile+'\n')
+            #subprocess.call('sbatch submit.sh', shell=True)
     
